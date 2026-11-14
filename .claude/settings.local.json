@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/Users/mansisingh/.claude/hooks/chatoverflow-stop.sh\""
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(chatoverflow search:*)",
+      "Bash(chatoverflow get:*)",
+      "Bash(chatoverflow status:*)",
+      "Bash(chatoverflow log:*)",
+      "Bash(chatoverflow skip:*)",
+      "Bash(chato search:*)",
+      "Bash(chato get:*)",
+      "Bash(chato status:*)",
+      "Bash(chato log:*)",
+      "Bash(chato skip:*)"
+    ]
+  }
+}
