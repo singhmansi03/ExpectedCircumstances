@@ -717,14 +717,15 @@ export default function Home() {
 
         {/* MULTIMODAL RESULTS - ADD THIS */}
         {searched && flights.length > 0 && !loading && (
-          <MultimodalResults
-            from={from}
-            to={to}
-            date={date}
-            budget={Number(budget)}
-            originalFlights={flights}
-          />
-        )}
+  <MultimodalResults
+    from={from}
+    to={to}
+    date={date}
+    budget={Number(budget)}
+    originalFlights={flights}
+    alternatives={alternatives}
+  />
+)}
 
         {/* FOOTER */}
         <footer className="mt-16 border-t border-gray-200 pt-6 text-center text-sm text-gray-400">

@@ -1,417 +1,70 @@
 
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import { compareRoutes } from "../../lib/optimizer";
-
-// type Flight = {
-//   id: number;
-//   price: number;
-//   duration: number;
-//   airline: string;
-//   departure?: string;
-//   arrival?: string;
-//   stops: number;
-// };
-
-// type Alternative = {
-//   airport: string;
-//   flights: Flight[];
-//   error?: string;
-// };
-
-// type GroundRoute = {
-//   available: boolean;
-//   durationMinutes?: number | null;
-//   distanceMiles?: number | null;
-//   fareUSD?: number | null;
-//   fareKnown?: boolean;
-// };
-
-// type Option = {
-//   airport: string;
-//   flight: Flight;
-//   ground: GroundRoute | null;
-//   mode: "DRIVE" | "TRANSIT";
-// };
-
-// type Props = {
-//   from: string;
-//   to: string;
-//   date: string;
-//   budget: number;
-//   originalFlights: Flight[];
-// };
-
-// function formatMinutes(minutes: number | null) {
-//   if (minutes === null) return "Unknown";
-
-//   const hours = Math.floor(minutes / 60);
-//   const mins = minutes % 60;
-
-//   return `${hours}h ${mins}m`;
-// }
-
-// export default function MultimodalResults({
-//   from,
-//   to,
-//   date,
-//   budget,
-//   originalFlights,
-// }: Props) {
-//   const [options, setOptions] = useState<Option[]>([]);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState("");
-
-//   const cheapestOriginal = originalFlights
-//     .filter((flight) => Number.isFinite(flight.price))
-//     .reduce(
-//       (lowest, flight) => Math.min(lowest, flight.price),
-//       Infinity
-//     );
-
-//   useEffect(() => {
-//     let cancelled = false;
-
-//     async function load() {
-//       if (
-//         !from ||
-//         !to ||
-//         !date ||
-//         originalFlights.length === 0
-//       ) {
-//         setOptions([]);
-//         return;
-//       }
-
-//       setLoading(true);
-//       setError("");
-//       setOptions([]);
-
-//       try {
-//         const params = new URLSearchParams({
-//           from: from.toUpperCase(),
-//           to: to.toUpperCase(),
-//           date,
-//         });
-
-//         const response = await fetch(
-//           `/api/alternatives?${params.toString()}`
-//         );
-
-//         if (!response.ok) {
-//           throw new Error("Could not load alternative flights");
-//         }
-
-//         const data = await response.json();
-
-//         const alternatives: Alternative[] =
-//           data.alternatives || [];
-
-//         // Search ground routes for each nearby airport.
-//         const results = await Promise.all(
-//           alternatives.map(async (alternative) => {
-//             const flights = alternative.flights || [];
-
-//             if (flights.length === 0) return [];
-
-//             // Use the cheapest flight from this airport.
-//             const cheapest = [...flights].sort(
-//               (a, b) => a.price - b.price
-//             )[0];
-
-//             const modes = ["DRIVE", "TRANSIT"] as const;
-
-//             const groundResults = await Promise.all(
-//               modes.map(async (mode) => {
-//                 try {
-//                   const groundParams = new URLSearchParams({
-//                     from: from.toUpperCase(),
-//                     to: alternative.airport.toUpperCase(),
-//                     mode,
-//                   });
-
-//                   const groundResponse = await fetch(
-//                     `/api/ground?${groundParams.toString()}`
-//                   );
-
-//                   if (!groundResponse.ok) return null;
-
-//                   const groundData: GroundRoute =
-//                     await groundResponse.json();
-
-//                   return groundData.available
-//                     ? groundData
-//                     : null;
-//                 } catch {
-//                   return null;
-//                 }
-//               })
-//             );
-
-//             return modes.map((mode, index) => ({
-//               airport: alternative.airport,
-//               flight: cheapest,
-//               ground: groundResults[index],
-//               mode,
-//             }));
-//           })
-//         );
-
-//         if (!cancelled) {
-//           setOptions(results.flat());
-//         }
-//       } catch (err) {
-//         if (!cancelled) {
-//           setError(
-//             err instanceof Error
-//               ? err.message
-//               : "Could not load multimodal routes"
-//           );
-//         }
-//       } finally {
-//         if (!cancelled) setLoading(false);
-//       }
-//     }
-
-//     load();
-
-//     return () => {
-//       cancelled = true;
-//     };
-//     // Search results are refreshed when the submitted inputs change.
-//   }, [from, to, date, originalFlights]);
-
-//   const compared = Number.isFinite(cheapestOriginal)
-//     ? compareRoutes(
-//         options.map((option) => ({
-//           airport: option.airport,
-//           flightPrice: option.flight.price,
-//           flightDuration: option.flight.duration,
-
-//           // Driving duration does NOT include a price.
-//           // Transit fare is only used when provided.
-//           groundPrice:
-//             option.mode === "TRANSIT" &&
-//             option.ground?.fareKnown === true
-//               ? option.ground.fareUSD ?? null
-//               : null,
-
-//           groundDuration:
-//             option.ground?.durationMinutes ?? null,
-
-//           groundFareKnown:
-//             option.mode === "TRANSIT" &&
-//             option.ground?.fareKnown === true,
-
-//           // We haven't checked flight connections yet.
-//           connectionVerified: false,
-//         })),
-//         cheapestOriginal,
-//         budget
-//       )
-//     : [];
-
-//   return (
-//     <section className="mt-8">
-//       <div className="mb-4">
-//         <h2 className="text-2xl font-bold text-gray-900">
-//           Multimodal Travel Options
-//         </h2>
-
-//         <p className="mt-1 text-sm text-gray-500">
-//           Compare nearby airports with driving and public
-//           transit connections.
-//         </p>
-//       </div>
-
-//       {loading && (
-//         <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5 text-emerald-800">
-//           Finding ground connections to nearby airports...
-//         </div>
-//       )}
-
-//       {error && (
-//         <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
-//           {error}
-//         </div>
-//       )}
-
-//       {!loading && !error && options.length === 0 && (
-//         <div className="rounded-xl border border-gray-200 bg-white p-5 text-gray-500">
-//           No multimodal routes found for this search.
-//         </div>
-//       )}
-
-//       <div className="space-y-4">
-//         {!loading &&
-//           options.map((option, index) => {
-//             const result = compared[index];
-
-//             // Match by index rather than relying on
-//             // optimizer sorting.
-//             const calculated = compared.find(
-//               (item) =>
-//                 item.airport === option.airport &&
-//                 item.flightPrice === option.flight.price &&
-//                 item.groundDuration ===
-//                   (option.ground?.durationMinutes ?? null) &&
-//                 item.groundFareKnown ===
-//                   (option.mode === "TRANSIT" &&
-//                     option.ground?.fareKnown === true)
-//             );
-
-//             const totalCost =
-//               calculated?.totalCost ?? null;
-
-//             const savings =
-//               calculated?.savings ?? null;
-
-//             return (
-//               <div
-//                 key={`${option.airport}-${option.mode}-${index}`}
-//                 className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-//               >
-//                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-//                   <div>
-//                     <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-//                       Alternative Airport
-//                     </p>
-
-//                     <h3 className="text-xl font-bold text-gray-900">
-//                       {from.toUpperCase()} →{" "}
-//                       {option.airport} →{" "}
-//                       {to.toUpperCase()}
-//                     </h3>
-
-//                     <p className="mt-1 text-sm text-gray-500">
-//                       {option.mode === "DRIVE"
-//                         ? "Driving + Flight"
-//                         : "Public Transit + Flight"}
-//                     </p>
-//                   </div>
-
-//                   <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-//                     Connection not verified
-//                   </span>
-//                 </div>
-
-//                 <div className="grid gap-3 sm:grid-cols-2">
-//                   <div className="rounded-xl bg-gray-50 p-4">
-//                     <p className="text-sm text-gray-500">
-//                       Ground transportation
-//                     </p>
-
-//                     <p className="mt-1 text-lg font-bold text-gray-900">
-//                       {formatMinutes(
-//                         option.ground?.durationMinutes ??
-//                           null
-//                       )}
-//                     </p>
-
-//                     <p className="text-sm text-gray-500">
-//                       {option.ground?.distanceMiles ??
-//                         "Unknown"}{" "}
-//                       miles
-//                     </p>
-
-//                     <p className="mt-2 text-sm font-medium text-gray-700">
-//                       Cost:{" "}
-//                       {option.mode === "TRANSIT" &&
-//                       option.ground?.fareKnown &&
-//                       option.ground.fareUSD != null
-//                         ? `$${option.ground.fareUSD.toFixed(2)}`
-//                         : "Unknown"}
-//                     </p>
-//                   </div>
-
-//                   <div className="rounded-xl bg-emerald-50 p-4">
-//                     <p className="text-sm text-emerald-700">
-//                       Flight from {option.airport}
-//                     </p>
-
-//                     <p className="mt-1 text-lg font-bold text-gray-900">
-//                       ${option.flight.price.toLocaleString()}
-//                     </p>
-
-//                     <p className="text-sm text-gray-600">
-//                       {option.flight.airline}
-//                     </p>
-
-//                     <p className="mt-2 text-sm text-gray-600">
-//                       {formatMinutes(
-//                         option.flight.duration
-//                       )}{" "}
-//                       in flight itinerary
-//                     </p>
-//                   </div>
-//                 </div>
-
-//                 <div className="mt-4 border-t border-gray-100 pt-4">
-//                   <div className="flex flex-wrap items-center justify-between gap-3">
-//                     <div>
-//                       <p className="text-sm text-gray-500">
-//                         Combined price
-//                       </p>
-
-//                       <p className="text-xl font-bold text-gray-900">
-//                         {totalCost === null
-//                           ? "Not yet available"
-//                           : `$${totalCost.toFixed(2)}`}
-//                       </p>
-//                     </div>
-
-//                     <div className="text-right">
-//                       <p className="text-sm text-gray-500">
-//                         {savings === null
-//                           ? "Flight-only price difference"
-//                           : "Potential savings"}
-//                       </p>
-
-//                       <p className="text-lg font-semibold text-emerald-700">
-//                         {savings === null
-//                           ? `$${(
-//                               cheapestOriginal -
-//                               option.flight.price
-//                             ).toFixed(2)}`
-//                           : `$${savings.toFixed(2)}`}
-//                       </p>
-//                     </div>
-//                   </div>
-
-//                   <p className="mt-3 text-xs text-gray-500">
-//                     {totalCost === null
-//                       ? "Ground fare is unknown, so this is not a confirmed total price."
-//                       : "Ground fare was reported, but the connection schedule has not been verified."}
-//                   </p>
-//                 </div>
-//               </div>
-//             );
-//           })}
-//       </div>
-//     </section>
-//   );
-// }
 "use client";
+
+import { useEffect, useState } from "react";
+import { checkConnection } from "../../lib/connectionFeasibility";
+
+type Flight = {
+  id: number;
+  price: number;
+  duration: number;
+  airline: string;
+  departure?: string;
+  arrival?: string;
+  stops: number;
+  segments: {
+    from: string;
+    to: string;
+    airline: string;
+  }[];
+};
+
+type Alternative = {
+  airport: string;
+  flights: Flight[];
+  error?: string;
+};
+
+type GroundRoute = {
+  available: boolean;
+  durationMinutes?: number | null;
+  distanceMiles?: number | null;
+  fareUSD?: number | null;
+  fareKnown?: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+};
+
+type TravelOption = {
+  airport: string;
+  flight: Flight;
+  mode: "DRIVE" | "TRANSIT";
+  ground: GroundRoute | null;
+};
 
 type Props = {
   from: string;
   to: string;
   date: string;
   budget: number;
-  originalFlights: {
-    id: number;
-    price: number;
-    duration: number;
-    airline: string;
-    stops: number;
-    segments: {
-      from: string;
-      to: string;
-      airline: string;
-    }[];
-  }[];
+  originalFlights: Flight[];
+  alternatives: Alternative[];
 };
+
+function formatDuration(minutes: number | null | undefined) {
+  if (minutes == null || !Number.isFinite(minutes)) {
+    return "Unknown";
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+
+  return `${hours}h ${mins}m`;
+}
+
+function formatPrice(price: number) {
+  return `$${price.toLocaleString("en-US")}`;
+}
 
 export default function MultimodalResults({
   from,
@@ -419,17 +72,416 @@ export default function MultimodalResults({
   date,
   budget,
   originalFlights,
+  alternatives,
 }: Props) {
-  return (
-    <div className="mt-8 rounded-xl bg-emerald-100 p-6 text-emerald-800">
-      <h2 className="text-xl font-bold">
-        Multimodal Component Working!
-      </h2>
+  const [options, setOptions] = useState<TravelOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-      <p>Route: {from} → {to}</p>
-      <p>Date: {date}</p>
-      <p>Budget: ${budget}</p>
-      <p>Flights found: {originalFlights.length}</p>
-    </div>
+  const cheapestOriginal = originalFlights.reduce(
+    (lowest, flight) =>
+      Number.isFinite(flight.price)
+        ? Math.min(lowest, flight.price)
+        : lowest,
+    Infinity
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadGroundRoutes() {
+      setLoading(true);
+      setError("");
+      setOptions([]);
+
+      try {
+        const validAlternatives = alternatives.filter(
+          (alternative) =>
+            !alternative.error &&
+            alternative.flights.length > 0
+        );
+
+        const results = await Promise.all(
+          validAlternatives.map(async (alternative) => {
+            const cheapestFlight = [...alternative.flights]
+              .filter((flight) =>
+                Number.isFinite(flight.price)
+              )
+              .sort((a, b) => a.price - b.price)[0];
+
+            if (!cheapestFlight) {
+              return [];
+            }
+
+            const modes = ["DRIVE", "TRANSIT"] as const;
+
+            const groundRoutes = await Promise.all(
+              modes.map(async (mode) => {
+                try {
+                  const params = new URLSearchParams({
+                    from: from.toUpperCase(),
+                    to: alternative.airport.toUpperCase(),
+                    mode,
+                  });
+
+                  const response = await fetch(
+                    `/api/ground?${params.toString()}`
+                  );
+
+                  if (!response.ok) {
+                    return null;
+                  }
+
+                  const data: GroundRoute =
+                    await response.json();
+
+                  return data.available ? data : null;
+                } catch {
+                  return null;
+                }
+              })
+            );
+
+            return modes.map((mode, index) => ({
+              airport: alternative.airport,
+              flight: cheapestFlight,
+              mode,
+              ground: groundRoutes[index],
+            }));
+          })
+        );
+
+        if (!cancelled) {
+          setOptions(results.flat());
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not load ground routes"
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    if (alternatives.length > 0) {
+      loadGroundRoutes();
+    } else {
+      setOptions([]);
+      setLoading(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [from, to, date, alternatives]);
+
+  return (
+    <section className="mt-12">
+      <div className="mb-6">
+        <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-emerald-600">
+          Multimodal Travel Optimizer
+        </p>
+
+        <h2 className="text-3xl font-bold text-gray-900">
+          Combine Ground Travel + Flights
+        </h2>
+
+        <p className="mt-2 max-w-3xl text-gray-500">
+          Compare driving or public transit to nearby airports,
+          followed by a flight to your destination.
+        </p>
+      </div>
+
+      {Number.isFinite(cheapestOriginal) && (
+        <div className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-6">
+          <p className="text-sm font-medium text-emerald-700">
+            Cheapest flight from {from.toUpperCase()}
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-gray-900">
+            {formatPrice(cheapestOriginal)}
+          </p>
+
+          <p className="mt-1 text-sm text-gray-600">
+            This is the flight-only baseline used for comparison.
+          </p>
+        </div>
+      )}
+
+      {loading && (
+        <div className="rounded-2xl border border-emerald-100 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-500" />
+
+          <p className="font-semibold text-gray-900">
+            Finding ground transportation...
+          </p>
+
+          <p className="mt-2 text-sm text-gray-500">
+            Checking driving and transit routes to nearby airports.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && options.length === 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-500">
+          No multimodal routes available for this search.
+        </div>
+      )}
+
+      {!loading && options.length > 0 && (
+        <div className="grid gap-5 md:grid-cols-2">
+          {options.map((option) => {
+            const groundDuration =
+  option.ground?.durationMinutes ?? null;
+
+const connection = checkConnection(
+  option.flight.departure,
+  groundDuration
+);
+
+            const groundFare =
+              option.mode === "TRANSIT" &&
+              option.ground?.fareKnown === true &&
+              typeof option.ground.fareUSD === "number"
+                ? option.ground.fareUSD
+                : null;
+
+            const totalCost =
+              groundFare === null
+                ? null
+                : option.flight.price + groundFare;
+
+            const totalDuration =
+              groundDuration === null
+                ? null
+                : groundDuration + option.flight.duration;
+
+            const flightPriceDifference =
+              Number.isFinite(cheapestOriginal)
+                ? cheapestOriginal - option.flight.price
+                : null;
+
+            const potentialSavings =
+              totalCost !== null &&
+              Number.isFinite(cheapestOriginal)
+                ? cheapestOriginal - totalCost
+                : null;
+
+            const withinBudget =
+              totalCost !== null &&
+              (budget <= 0 || totalCost <= budget);
+
+            return (
+              <div
+                key={`${option.airport}-${option.mode}`}
+                className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:border-emerald-200 hover:shadow-md"
+              >
+                <div className="p-6">
+                  <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+                        Alternative Airport
+                      </p>
+
+                      <h3 className="mt-1 text-xl font-bold text-gray-900">
+                        {from.toUpperCase()} → {option.airport} →{" "}
+                        {to.toUpperCase()}
+                      </h3>
+
+                      <p className="mt-2 text-sm text-gray-500">
+                        {option.mode === "DRIVE"
+                          ? "🚗 Driving + Flight"
+                          : "🚆 Public Transit + Flight"}
+                      </p>
+                    </div>
+
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                    {connection.status === "estimated"
+                        ? "Timing estimated"
+                        : "Connection unknown"}
+                    </span>
+                    {connection.status === "estimated" && (
+  <div className="w-full rounded-xl bg-blue-50 p-4 text-sm text-blue-900">
+    <p className="font-semibold">
+      Suggested Connection Schedule
+    </p>
+
+    <p className="mt-2">
+      Leave {from.toUpperCase()} by:{" "}
+      <strong>{connection.latestGroundDeparture}</strong>
+    </p>
+
+    <p className="mt-1">
+      Arrive at {option.airport} by:{" "}
+      <strong>{connection.latestAirportArrival}</strong>
+    </p>
+
+    <p className="mt-1">
+      Flight departs:{" "}
+      <strong>{connection.flightDeparture}</strong>
+    </p>
+
+    <p className="mt-2 text-xs text-blue-700">
+      Includes a 3-hour airport buffer. Times are estimates
+      in the departure airport's local timezone; traffic,
+      transit schedules, and actual connection feasibility
+      have not been verified.
+    </p>
+  </div>
+)}
+                  </div>
+
+                  <div className="mb-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl bg-gray-50 p-4">
+                      <p className="text-sm text-gray-500">
+                        Ground Transportation
+                      </p>
+
+                      <p className="mt-2 text-xl font-bold text-gray-900">
+                        {formatDuration(groundDuration)}
+                      </p>
+
+                      <p className="mt-1 text-sm text-gray-500">
+                        {option.ground?.distanceMiles != null
+                          ? `${option.ground.distanceMiles} miles`
+                          : "Distance unavailable"}
+                      </p>
+
+                      <p className="mt-3 text-sm font-medium text-gray-700">
+                        Cost:{" "}
+                        {groundFare !== null
+                          ? formatPrice(groundFare)
+                          : "Unknown"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-emerald-50 p-4">
+                      <p className="text-sm text-emerald-700">
+                        Flight from {option.airport}
+                      </p>
+
+                      <p className="mt-2 text-xl font-bold text-gray-900">
+                        {formatPrice(option.flight.price)}
+                      </p>
+
+                      <p className="mt-1 text-sm text-gray-600">
+                        {option.flight.airline}
+                      </p>
+
+                      <p className="mt-3 text-sm text-gray-600">
+                        {formatDuration(option.flight.duration)}
+                        {" · "}
+                        {option.flight.stops} stop
+                        {option.flight.stops === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-100 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">
+                          Combined Price
+                        </p>
+
+                        <p className="mt-1 text-2xl font-bold text-gray-900">
+                          {totalCost === null
+                            ? "Unknown"
+                            : formatPrice(totalCost)}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">
+                          Combined Travel Time
+                        </p>
+
+                        <p className="mt-1 text-lg font-semibold text-gray-900">
+                          {formatDuration(totalDuration)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 border-t border-gray-100 pt-4">
+                      <p className="text-sm text-gray-500">
+                        {potentialSavings !== null
+                          ? "Price difference including reported ground fare"
+                          : "Flight-only price difference"}
+                      </p>
+
+                      <p
+                        className={`mt-1 text-lg font-bold ${
+                          (potentialSavings ??
+                            flightPriceDifference ??
+                            0) > 0
+                            ? "text-emerald-600"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {(potentialSavings ??
+                          flightPriceDifference) === null
+                          ? "Unavailable"
+                          : (potentialSavings ??
+                              flightPriceDifference)! >= 0
+                          ? `${formatPrice(
+                              (potentialSavings ??
+                                flightPriceDifference)!
+                            )} lower`
+                          : `${formatPrice(
+                              Math.abs(
+                                (potentialSavings ??
+                                  flightPriceDifference)!
+                              )
+                            )} higher`}
+                      </p>
+
+                      <p className="mt-2 text-xs text-gray-500">
+                        {totalCost === null
+                          ? "Ground transportation cost is unknown. This is not a confirmed total or savings amount."
+                          : "Ground fare was reported, but connection timing and feasibility have not been verified."}
+                      </p>
+
+                      {totalCost !== null && (
+                        <p className="mt-2 text-xs font-medium text-gray-600">
+                          {withinBudget
+                            ? "Reported total is within your budget."
+                            : "Reported total exceeds your budget."}
+                        </p>
+                      )}
+
+                      {option.flight.departure && (
+                        <p className="mt-2 text-xs text-gray-500">
+                          Flight departure:{" "}
+                          {option.flight.departure}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="mt-5 text-xs leading-5 text-gray-400">
+        Ground travel estimates may not match your departure
+        date or time. Allow time for airport check-in, security,
+        traffic, and transfers. Driving costs are not calculated.
+        Connections have not been verified.
+      </p>
+    </section>
   );
 }
