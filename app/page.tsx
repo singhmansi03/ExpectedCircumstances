@@ -1,7 +1,14 @@
-
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+const MultimodalResults = dynamic(
+  () =>
+    import("./components/MultimodalResults").then(
+      (module) => module.default
+    ),
+  { ssr: false }
+);
 
 type Flight = {
   id: number;
@@ -708,10 +715,22 @@ export default function Home() {
           </p>
         )}
 
+        {/* MULTIMODAL RESULTS - ADD THIS */}
+        {searched && flights.length > 0 && !loading && (
+          <MultimodalResults
+            from={from}
+            to={to}
+            date={date}
+            budget={Number(budget)}
+            originalFlights={flights}
+          />
+        )}
+
         {/* FOOTER */}
         <footer className="mt-16 border-t border-gray-200 pt-6 text-center text-sm text-gray-400">
           © 2026 Expected Circumstances · Travel smarter, not harder.
         </footer>
+
 
       </div>
     </main>
