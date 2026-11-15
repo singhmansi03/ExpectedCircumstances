@@ -56,7 +56,7 @@ export default function AgentPanel() {
   return (
     <section className="trace" style={{ marginTop: 0, marginBottom: 21 }}>
       <h3>✦ Travel recovery agent</h3>
-      <p style={{ fontSize: 12, color: "#71847a", marginBottom: 14 }}>
+      <p className="agent-intro">
         Describe what went wrong. The agent plans, sends subagents to scout airports and search routes,
         and asks you to approve its recommendation. Every price comes from the search engine, not the AI.
       </p>
@@ -76,17 +76,7 @@ export default function AgentPanel() {
         {state?.messages.map((m, i) => (
           <div
             key={i}
-            style={{
-              alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-              maxWidth: "88%",
-              background: m.role === "user" ? "#e5f8ee" : "#f5faf7",
-              border: "1px solid #e1ebe7",
-              borderRadius: 12,
-              padding: "10px 13px",
-              fontSize: 13,
-              whiteSpace: "pre-wrap",
-              lineHeight: 1.55,
-            }}
+            className={m.role === "user" ? "agent-bubble user" : "agent-bubble"}
           >
             {m.text}
           </div>
@@ -126,7 +116,7 @@ export default function AgentPanel() {
             ))}
           </div>
           {openFile && state?.files[openFile] && (
-            <pre style={{ fontSize: 11, background: "#f5faf7", border: "1px solid #e1ebe7", borderRadius: 10, padding: 12, whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto" }}>
+            <pre className="agent-file">
               {state.files[openFile]}
             </pre>
           )}
@@ -141,7 +131,7 @@ export default function AgentPanel() {
           onChange={(e) => setInput(e.target.value)}
           rows={3}
           placeholder={state ? "Push back or add a constraint, e.g. \"I can't drive\"" : EXAMPLE}
-          style={{ width: "100%", border: "1px solid #d9e5e0", borderRadius: 10, padding: 12, fontSize: 13 }}
+          className="agent-input"
         />
         <button className="submit-search" type="submit" disabled={busy || !input.trim()}>
           {busy ? "Agent is planning and searching… (can take a minute)" : state ? "Send to agent" : "Ask the agent"}

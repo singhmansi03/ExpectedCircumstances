@@ -37,6 +37,10 @@ export const metadata: Metadata = {
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
  return (
   <html lang="en" suppressHydrationWarning>
+    <head>
+      {/* Apply the saved theme before the page paints, so there is no light flash in dark mode. */}
+      <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("expected-circumstances-theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light";document.documentElement.style.colorScheme=d?"dark":"light"}catch(e){}` }} />
+    </head>
     <body>{children}</body>
   </html>
 );
