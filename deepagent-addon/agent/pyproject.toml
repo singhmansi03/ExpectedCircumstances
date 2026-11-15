@@ -1,0 +1,18 @@
+[project]
+name = "expected-circumstances-agent"
+version = "0.1.0"
+description = "Travel-recovery deep agent for Expected Circumstances"
+requires-python = ">=3.12"
+dependencies = [
+    "deepagents>=0.7",
+    "langchain>=1.3.14",
+    "langchain-core>=1.8.0",
+    "langchain-google-genai>=2.0",
+    "langgraph>=1.2.14",
+    "langgraph-cli[inmem]>=0.4",
+    "httpx>=0.27",
+    "python-dotenv>=1.1.1",
+]
+
+[tool.setuptools]
+packages = ["utils"]
