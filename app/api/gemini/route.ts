@@ -46,7 +46,7 @@
 //     `;
 
 //     const response = await fetch(
-//       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+//       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
 //       {
 //         method: "POST",
 //         headers: {
@@ -109,7 +109,7 @@ export async function POST(req:Request) {
   if(typeof body.message!=="string"||body.message.length>1500||!Array.isArray(body.routes)||body.routes.length>15)return NextResponse.json({error:"Invalid message or routes"},{status:400});
   if(!process.env.GEMINI_API_KEY)return NextResponse.json({error:"Gemini API key missing"},{status:503});
   const prompt=`Summarize only these route records. Never invent prices, dates, seats, or verified flight status. Label any unknown cost or connection as unverified.\nUser note: ${body.message}\nRoutes: ${JSON.stringify(body.routes).slice(0,10000)}`;
-  const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":process.env.GEMINI_API_KEY},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:300}}),cache:"no-store"});
+  const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":process.env.GEMINI_API_KEY},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:300}}),cache:"no-store"});
   if(!response.ok)return NextResponse.json({error:"Gemini request failed"},{status:502});
   const result=await response.json() as {candidates?:Array<{content?:{parts?:Array<{text?:string}>}}>};
   const answer=result.candidates?.[0]?.content?.parts?.map(x=>x.text||"").join("").trim();

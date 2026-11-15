@@ -22,7 +22,7 @@ export async function planAirportResearch(origin:Airport,destination:Airport,req
  ].join("\n");
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),6500);
  try{
-  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:120,responseMimeType:"application/json"}}),signal:controller.signal,cache:"no-store"});
+  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:120,responseMimeType:"application/json"}}),signal:controller.signal,cache:"no-store"});
   if(!res.ok)return null;
   const data=await res.json() as {candidates?:Array<{content?:{parts?:Array<{text?:string}>}}>};
   const content=data.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("").trim()||"";

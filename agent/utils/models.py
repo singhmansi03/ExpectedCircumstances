@@ -20,7 +20,7 @@ if os.environ.get("GEMINI_API_KEY") and not os.environ.get("GOOGLE_API_KEY"):
     os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
 
 MODEL_SPEC = {
-    "model": "google_genai:" + os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
+    "model": "google_genai:" + os.environ.get("GEMINI_MODEL", "gemini-3.5-flash"),
     "temperature": 0.1,
 }
 

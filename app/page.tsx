@@ -5,6 +5,7 @@ import { AIRPORTS } from "../lib/airports";
 import { shiftDate } from "../lib/time";
 import MultimodalResults from "./components/MultimodalResults";
 import ThemeToggle from "./components/ThemeToggle";
+import AgentPanel from "./components/AgentPanel";
 import type { Disruption, GroundMode, Priority, SearchMode, SearchResponse } from "../lib/types";
 
 // Only ever called inside useEffect / event handlers, never during render.
@@ -90,6 +91,7 @@ export default function Home() {
      </div>
    </form></aside>
    <div className="main-col">
+      <AgentPanel/>
       {error&&<div className="error-box" role="alert"><b>Search error</b><p>{error}</p></div>}
       {loading&&<div className="loading-panel" role="status"><div className="loader"/><h2>Researching your routes…</h2><p>Discovering airports, checking flight prices, estimating ground transfers, and validating departure windows.</p></div>}
       {data&&!loading&&<MultimodalResults data={data}/>}

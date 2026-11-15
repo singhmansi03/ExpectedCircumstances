@@ -13,7 +13,7 @@ export async function explainJourneys(routes:Journey[],request:SearchRequest):Pr
  ].join("\n");
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);
  try{
-  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.15,maxOutputTokens:350}}),signal:controller.signal,cache:"no-store"});
+  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.15,maxOutputTokens:350}}),signal:controller.signal,cache:"no-store"});
   if(!res.ok)return null;
   const data=await res.json() as {candidates?:Array<{content?:{parts?:Array<{text?:string}>}}>};
   return data.candidates?.[0]?.content?.parts?.map(p=>p.text??"").join("").trim()||null;
