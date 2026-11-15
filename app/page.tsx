@@ -744,6 +744,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AIRPORTS } from "../lib/airports";
 import { shiftDate } from "../lib/time";
 import MultimodalResults from "./components/MultimodalResults";
+import ThemeToggle from "./components/ThemeToggle";
 import type { Disruption, GroundMode, Priority, SearchMode, SearchResponse } from "../lib/types";
 
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
@@ -769,9 +770,11 @@ export default function Home() {
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState("");
  const [data,setData]=useState<SearchResponse|null>(null);
- const [clock,setClock]=useState(()=>new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",timeZoneName:"short"}).format(new Date()));
+ const [clock,setClock]=useState("");
  useEffect(()=>{
-   const id=setInterval(()=>setClock(new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",timeZoneName:"short"}).format(new Date())),30000);
+   const updateTime=()=>setClock(new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",timeZoneName:"short"}).format(new Date()));
+   updateTime();
+   const id=setInterval(updateTime,30000);
    return()=>clearInterval(id);
  },[]);
  const inEmergency=mode==="emergency";
@@ -782,13 +785,13 @@ export default function Home() {
   try {
    const response=await fetch("/api/search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({origin,destination,startAddress,departureDate,returnDate:!inEmergency&&roundTrip?returnDate:undefined,budgetUSD:budget.trim()?Number(budget):null,mode,priority:inEmergency?"fastest":priority,flexibleDays:inEmergency?0:flexibleDays,maxGroundMiles:Number(maxGroundMiles),extraAirports,preferredModes,disruption:inEmergency?disruption:"none",originalFlightNumber:inEmergency?originalFlightNumber:"",demo})});
    const json:SearchResponse&{error?:string}=await response.json();
-   if(!response.ok)throw new Error(json.error||"The search failed.");
+   if(!response.ok)throw new Error(json.error||`The search failed (HTTP ${response.status}).`);
    setData(json);
   } catch(e){setError(e instanceof Error?e.message:"Unable to complete search.");}
   finally{setLoading(false);}
  }
  return <main className="site-shell">
-   <header className="nav-bar"><div className="container nav-content"><div className="logo"><span className="logo-icon">↗</span><div><strong>Expected Circumstances</strong><small>Routes that make more sense</small></div></div><span className="beta">SMART ROUTE SEARCH · BETA</span></div></header>
+   <header className="nav-bar"><div className="container nav-content"><div className="logo"><span className="logo-icon">↗</span><div><strong>Expected Circumstances</strong><small>Routes that make more sense</small></div></div><div className="nav-actions"><ThemeToggle/><span className="beta">SMART ROUTE SEARCH · BETA</span></div></div></header>
    <section className="hero"><div className="container hero-grid"><div><span className="eyebrow light">BEYOND JUST FLIGHTS</span><h1>Less money wasted.<br/><em>More ways to get there.</em></h1><p>Explore another departure airport, reach it by ground transport, and compare the full trip—not just the airfare.</p><div className="hero-chips"><span>✓ Alternative airports</span><span>✓ Flight + ground</span><span>✓ Emergency rerouting</span></div></div><div className="hero-stat"><span>ONE SEARCH. MULTIPLE POSSIBILITIES.</span><div className="route-preview"><span>DES MOINES</span><b>🚗 → ✈️</b><span>SEOUL</span></div><p>Compare price, total travel time, and connection risk.</p><small>Demo routes are illustrative, never live fare claims.</small></div></div></section>
    <div className="container workspace">
    <aside className="search-col"><form onSubmit={runSearch} className="search-panel">
