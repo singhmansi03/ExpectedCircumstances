@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AIRPORTS } from "../lib/airports";
 import { shiftDate } from "../lib/time";
 import MultimodalResults from "./components/MultimodalResults";
+import ThemeToggle from "./components/ThemeToggle";
 import type { Disruption, GroundMode, Priority, SearchMode, SearchResponse } from "../lib/types";
 
 // Only ever called inside useEffect / event handlers, never during render.
@@ -61,7 +62,7 @@ export default function Home() {
   finally{setLoading(false);}
  }
  return <main className="site-shell">
-   <header className="nav-bar"><div className="container nav-content"><div className="logo"><span className="logo-icon">↗</span><div><strong>Expected Circumstances</strong><small>Routes that make more sense</small></div></div><span className="beta">SMART ROUTE SEARCH · BETA</span></div></header>
+<header className="nav-bar"><div className="container nav-content"><div className="logo"><span className="logo-icon">↗</span><div><strong>Expected Circumstances</strong><small>Routes that make more sense</small></div></div><div className="nav-actions"><span className="beta">SMART ROUTE SEARCH · BETA</span><ThemeToggle /></div></div></header>
    <section className="hero"><div className="container hero-grid"><div><span className="eyebrow light">BEYOND JUST FLIGHTS</span><h1>Less money wasted.<br/><em>More ways to get there.</em></h1><p>Explore another departure airport, reach it by ground transport, and compare the full trip—not just the airfare.</p><div className="hero-chips"><span>✓ Alternative airports</span><span>✓ Flight + ground</span><span>✓ Emergency rerouting</span></div></div><div className="hero-stat"><span>ONE SEARCH. MULTIPLE POSSIBILITIES.</span><div className="route-preview"><span>DES MOINES</span><b>🚗 → ✈️</b><span>SEOUL</span></div><p>Compare price, total travel time, and connection risk.</p><small>Demo routes are illustrative, never live fare claims.</small></div></div></section>
    <div className="container workspace">
    <aside className="search-col"><form onSubmit={runSearch} className="search-panel">
