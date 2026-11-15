@@ -525,7 +525,7 @@ export default function MultimodalResults({data}:{data:SearchResponse}) {
  return <section aria-live="polite" className="results-area">
    <div className="results-heading"><div><span className="eyebrow">{data.source==="demo"?"SAMPLE DATA — NOT REAL FARES":"LIVE PROVIDER SEARCH · RECHECK BEFORE BOOKING"}</span><h2>Route comparisons</h2><p>{data.journeys.length} route options across {data.searchedAirports.length} searched airports</p></div>{data.baselineUSD!==null&&<div className="baseline">Original airport flight from <strong>{money(data.baselineUSD)}</strong></div>}</div>
    {data.narrative&&<div className="ai-panel"><div className="flex items-center gap-2"><span>✦</span><strong>Gemini route analysis</strong></div><p>{data.narrative}</p></div>}
-   <div className="results-grid">{data.journeys.map((journey,index)=><JourneyCard journey={journey} index={index} result={data} key={journey.id}/>)}</div>
+   <div className="results-grid">{data.journeys.map((journey,index)=><JourneyCard journey={journey} index={index} result={data} key={`${journey.id}-${index}`}/>)}</div>
    {!data.journeys.length&&<div className="empty-state"><h3>No viable results with these filters</h3><p>Increase the budget or ground travel radius, change dates, or try a different departure airport.</p></div>}
    <section className="trace"><h3>Research agent activity</h3><div className="trace-rows">{data.agentSteps.map((step,i)=><div className="trace-row" key={i}><span className="dot"/><div><b>{step.name}</b><p>{step.detail}</p></div><span className="pill muted">{step.status}</span></div>)}</div></section>
    {data.warnings.length>0&&<aside className="global-warnings"><h3>Before you book</h3><ul>{data.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul></aside>}

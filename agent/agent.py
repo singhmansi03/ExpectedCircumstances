@@ -1,4 +1,4 @@
-"""Expected Circumstances travel-recovery deep agent.
+"""Extraordinary Circumstances travel-recovery deep agent.
 
 Built on the HackPrinceton "Intro to Deep Agents" starter (agent.py + langgraph.json,
 served with `langgraph dev`, driven from the UI through the LangGraph SDK as in Module 2).
@@ -181,7 +181,7 @@ If data_source is "demo", say the prices are fictional sample data.""",
     "tools": [search_journeys],
 }
 
-SYSTEM_PROMPT = f"""You are Expected Circumstances, a travel-recovery agent. Today is {today}.
+SYSTEM_PROMPT = f"""You are Extraordinary Circumstances, a travel-recovery agent. Today is {today}.
 A traveler tells you where they need to go, often after a cancellation or delay, with a budget or deadline.
 
 Process:

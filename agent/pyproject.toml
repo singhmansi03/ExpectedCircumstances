@@ -1,7 +1,7 @@
 [project]
 name = "expected-circumstances-agent"
 version = "0.1.0"
-description = "Travel-recovery deep agent for Expected Circumstances"
+description = "Travel-recovery deep agent for Extraordinary Circumstances"
 requires-python = ">=3.12"
 dependencies = [
     "deepagents>=0.7",

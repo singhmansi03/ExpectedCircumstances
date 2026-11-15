@@ -21,5 +21,4 @@ export function demoGround(from:Airport,to:Airport):GroundLeg[] {
 }
 export function demoAirports(origin:Airport,config:SearchRequest):Airport[] {
  const codes=origin.code==="DSM"?["ORD","MCI","OMA","CVG"]:["EWR","PHL","JFK","ORD"];
- return codes.map(c=>AIRPORT_BY_CODE.get(c)).filter((a):a is Airport=>Boolean(a));
-}
+  return codes.filter(c=>c!==origin.code).map(c=>AIRPORT_BY_CODE.get(c)).filter((a):a is Airport=>Boolean(a));}

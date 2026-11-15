@@ -50,7 +50,7 @@ export default function AgentPanel() {
     setInput("");
   }
 
-  const fileNames = Object.keys(state?.files ?? {}).sort();
+    const fileNames = Object.keys(state?.files ?? {}).filter((f) => f === "/itinerary.md");
   const pending = (state?.interrupts.length ?? 0) > 0;
 
   return (

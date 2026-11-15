@@ -13,7 +13,7 @@
 // });
 
 // export const metadata = {
-//   title: "Expected Circumstances",
+//   title: "Extraordinary Circumstances",
 //   description: "Find smarter, cheaper ways to travel.",
 // };
 
@@ -31,7 +31,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
- title: "Expected Circumstances | Smarter multimodal travel",
+ title: "Extraordinary Circumstances | Smarter multimodal travel",
  description: "Travel Smarter, not Harder",
 };
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
