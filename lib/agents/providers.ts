@@ -1,29 +1,56 @@
+
+import { createHash } from "crypto";
+import { promises as fs } from "fs";
+import path from "path";
 import { AIRPORTS, AIRPORT_BY_CODE, haversineMiles, directionsUrl } from "../airports";
 import { localDateToEpoch } from "../time";
 import type { Airport, FlightOffer, GroundLeg, GroundMode } from "../types";
-
+ 
 const SERP = "https://serpapi.com/search";
+// Every SerpApi response is saved here so repeating a search costs 0 credits.
+// Delete the .cache folder to force fresh prices.
+const CACHE_DIR = path.join(process.cwd(), ".cache", "serp");
+ 
 type JsonRecord = Record<string, unknown>;
 function rec(v:unknown):JsonRecord {return typeof v==="object"&&v!==null&&!Array.isArray(v)?v as JsonRecord:{};}
 function list(v:unknown):unknown[] {return Array.isArray(v)?v:[];}
 function str(v:unknown):string {return typeof v==="string"?v:"";}
 function num(v:unknown):number|null{return typeof v==="number"&&Number.isFinite(v)?v:null;}
+ 
 export async function serpRequest(engine:string,params:Record<string,string>):Promise<JsonRecord> {
  const key=process.env.SERPAPI_KEY;
  if(!key) throw new Error("SERPAPI_KEY is missing. Enable demo mode or configure the key.");
+ 
+ // Cache key is built WITHOUT the API key.
+ const hash=createHash("sha1").update(engine+"|"+new URLSearchParams(params).toString()).digest("hex");
+ const file=path.join(CACHE_DIR,`${engine}-${hash}.json`);
+ try {
+   const cached=JSON.parse(await fs.readFile(file,"utf8")) as JsonRecord;
+   console.log(`[serp cache hit] ${engine}`);
+   return cached;
+ } catch {
+   // Not cached yet: fall through to a real SerpApi call.
+ }
+ 
+ console.log(`[serp LIVE call - uses 1 credit] ${engine}`);
  const query=new URLSearchParams({...params,engine,api_key:key});
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9500);
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),25000);
  try {
    const res=await fetch(`${SERP}?${query.toString()}`,{cache:"no-store",signal:controller.signal});
    const data=rec(await res.json());
    if(!res.ok||data.error)throw new Error(`SerpAPI ${engine}: ${str(data.error)||`HTTP ${res.status}`}`);
+   // Writing can fail on read-only hosts like Vercel; that's fine, we just skip caching.
+   await fs.mkdir(CACHE_DIR,{recursive:true}).catch(()=>{});
+   await fs.writeFile(file,JSON.stringify(data)).catch(()=>{});
    return data;
  } finally {clearTimeout(timer);}
 }
+ 
 function airportMatchingText(a:Airport,text:string):boolean {
  const lower=text.toLowerCase();
  return Boolean(new RegExp(`(?:^|\\W)${a.code.toLowerCase()}(?:\\W|$)`).test(lower) || (a.name.toLowerCase()!==""&&lower.includes(a.name.toLowerCase())));
 }
+ 
 export async function discoverFromMaps(origin:Airport,radiusMiles:number):Promise<Airport[]> {
  const q=`airports near ${origin.city}`;
  const data=await serpRequest("google_maps",{type:"search",q,hl:"en"});
@@ -42,6 +69,7 @@ export async function discoverFromMaps(origin:Airport,radiusMiles:number):Promis
  }
  return [...discovered].map(code=>AIRPORT_BY_CODE.get(code)).filter((a):a is Airport=>Boolean(a));
 }
+ 
 export async function flightOffers(from:Airport,to:Airport,date:string,returnDate?:string):Promise<FlightOffer[]> {
  const params:Record<string,string>={departure_id:from.code,arrival_id:to.code,outbound_date:date,type:returnDate?"1":"2",currency:"USD",hl:"en",gl:"us"};
  if(returnDate)params.return_date=returnDate;
@@ -58,11 +86,13 @@ export async function flightOffers(from:Airport,to:Airport,date:string,returnDat
     return [{id:`${from.code}-${date}-${index}-${Math.round(price)}`,from:from.code,to:to.code,airline:str(segments[0].airline)||"Multiple airlines",priceUSD:price,durationMinutes:duration,departureLocal,arrivalLocal,departureEpoch,arrivalEpoch,stops:Math.max(0,segments.length-1),roundTrip:Boolean(returnDate),departureDate:date,source:"serpapi"}];
  });
 }
+ 
 function routeLink(from:Airport,to:Airport,mode:string,override?:string):string {
  if(!override)return directionsUrl(from,to,mode);
  const qs=new URLSearchParams({api:"1",origin:override,destination:`${to.name}, ${to.city}`,travelmode:mode==="drive"||mode==="rideshare"?"driving":"transit"});
  return `https://www.google.com/maps/dir/?${qs.toString()}`;
 }
+ 
 function transitMode(raw:JsonRecord):GroundMode {
  const trips=list(raw.trips).map(rec);
  const segmentModes=trips.map(t=>`${str(t.travel_mode)} ${str(t.title)}`.toLowerCase());
@@ -70,6 +100,7 @@ function transitMode(raw:JsonRecord):GroundMode {
  const hasBus=segmentModes.some(t=>/\bbus\b/.test(t));
  return hasTrain&&!hasBus?"train":hasBus&&!hasTrain?"bus":"transit";
 }
+ 
 export async function groundOffers(from:Airport,to:Airport,requested:GroundMode[],startAddress?:string):Promise<GroundLeg[]> {
  const allowedTransit=requested.some(m=>["bus","train","transit"].includes(m));
  const allowedDrive=requested.includes("drive")||requested.includes("rideshare");
@@ -102,3 +133,4 @@ export async function groundOffers(from:Airport,to:Airport,requested:GroundMode[
  // Prefer shorter distinct itineraries while limiting result volume.
  return legs.sort((a,b)=>a.durationMinutes-b.durationMinutes).filter((v,i,arr)=>arr.findIndex(x=>x.mode===v.mode)===i).slice(0,5);
 }
+ 
