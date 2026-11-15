@@ -67,6 +67,7 @@ def search_journeys(
     alternate_airports: str = "",
     ground_modes: str = "drive,bus,train,rideshare",
     max_ground_miles: int = 700,
+    max_ground_hours: int = 6,
     arrive_by: str = "",
 ) -> str:
     """Search and rank complete journeys (ground leg + flight) with the app's deterministic engine.
@@ -83,6 +84,7 @@ def search_journeys(
         alternate_airports: Comma-separated IATA codes to include as alternate departure airports, e.g. "ORD,MCI".
         ground_modes: Comma-separated allowed ground modes from drive,bus,train,rideshare.
         max_ground_miles: Radius for automatically chosen alternate airports.
+        max_ground_hours: Longest acceptable ground leg in hours (1-12). Longer drives/buses are rejected. Default 6.
         arrive_by: Optional deadline "YYYY-MM-DD HH:MM" in the destination's local time. Journeys arriving later are removed.
     """
     body = {
@@ -95,6 +97,7 @@ def search_journeys(
         "extraAirports": alternate_airports,
         "preferredModes": [m.strip() for m in ground_modes.split(",") if m.strip()],
         "maxGroundMiles": max_ground_miles,
+        "maxGroundHours": max_ground_hours,
         "flexibleDays": 0,
         "demo": not USE_LIVE_DATA,
     }
@@ -196,6 +199,7 @@ Process:
    and what must be verified before booking.
 6. Call finalize_itinerary with a short summary. The traveler approves or rejects it.
 
+Ground legs over 6 hours are rejected by default; raise max_ground_hours only if the traveler says they accept a longer trip.
 If the traveler pushes back (e.g. "I can't drive", "too expensive", "need to arrive earlier"),
 update the todos and search again with the new constraint instead of arguing.
 Every price and time you state must come from a tool result. Keep chat replies short."""
