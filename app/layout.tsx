@@ -35,5 +35,10 @@ export const metadata: Metadata = {
  description: "Travel Smarter, not Harder",
 };
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
- return <html lang="en"><body>{children}</body></html>;
+ return <html lang="en" suppressHydrationWarning>
+  <head>
+    <script dangerouslySetInnerHTML={{ __html: `try { const choice = localStorage.getItem('expected-circumstances-theme'); if (choice === 'light' || choice === 'dark') { document.documentElement.setAttribute('data-theme', choice); } } catch (_) {}` }} />
+  </head>
+  <body>{children}</body>
+ </html>;
 }
